@@ -1,0 +1,56 @@
+---
+- hosts: local
+  sudo: yes
+
+  tasks:
+
+    - name: Update apt cache
+      apt: update_cache=yes cache_valid_time=3600
+
+    - name: install packages
+      apt: name={{ item }} update_cache=yes state=latest
+      with_items:
+        - haproxy
+        - supervisor
+
+    - name: Install haproxy
+      apt: name=haproxy state=present
+
+    - name: Enable init script
+      replace: dest='/etc/default/haproxy'
+            regexp='ENABLED=0'
+            replace='ENABLED=1'
+
+    - name: Update HAProxy config
+      template: src=templates/haproxy.cfg
+            dest=/etc/haproxy/haproxy.cfg
+            backup=yes
+      notify:
+        - reload haproxy
+
+    - name: start haproxy
+      service: name=haproxy state=running
+
+    - name: create supervisor config
+      template: src=templates/supervisord.conf dest=/etc/supervisor/supervisord.conf
+
+    - name: create redishook config
+      template: src=templates/redishook.conf dest=/etc/supervisor/conf.d/redishook.conf
+
+    - name: make folder config redishook
+      command: mkdir -p /var/log/redishook/
+      notify:
+        - restart supervisor
+
+
+  handlers:
+    - name: restart haproxy
+      service: name=haproxy state=restarted
+
+    - name: reload haproxy
+      service: name=haproxy state=reloaded
+
+    - name: restart supervisor
+      service: name=supervisor state=restarted
+
+
