@@ -38,7 +38,8 @@
       template: src=templates/redishook.conf dest=/etc/supervisor/conf.d/redishook.conf
 
     - name: make folder config redishook
-      command: mkdir -p /var/log/redishook/
+      #command: mkdir -p /var/log/redishook/
+      file: path=/var/log/redishook state=directory
       notify:
         - restart supervisor
 
